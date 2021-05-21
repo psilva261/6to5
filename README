@@ -1,0 +1,4 @@
+# 6to5 (very wip)
+
+Convert ES6+ into ES5.1. For many scripts it's extremely slow and can use sometimes 1 GB of RAM. Might still be interesting to test some stuff.
+
