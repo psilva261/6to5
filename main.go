@@ -8,11 +8,78 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"github.com/jvatic/goja-babel"
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/js"
 	"io"
 	"log"
 	"os"
 	"strings"
 )
+
+type Features struct {
+	ArrowFunctions bool
+	BlockScoping   bool
+	Classes        bool
+	Spread         bool
+	Async          bool
+	Generators     bool
+}
+
+func FindFeatures(src string) (f Features, err error) {
+	ast, err := js.Parse(parse.NewInputString(src), js.Options{})
+	if err != nil {
+		return
+	}
+	w := walker{
+		Features: &f,
+	}
+	js.Walk(w, ast)
+	if strings.Contains(src, "...") {
+		w.Spread = true
+	}
+	return
+}
+
+func (f Features) Unsupported() bool {
+	return f.ArrowFunctions || f.BlockScoping || f.Classes || f.Spread || f.Async || f.Generators
+}
+
+type walker struct{
+	*Features
+}
+
+func (w walker) Enter(n js.INode) js.IVisitor {
+	switch n := n.(type) {
+	case *js.ArrowFunc:
+		w.ArrowFunctions = true
+		if n.Async {
+			w.Async = true
+		}
+	case *js.BlockStmt:
+		w.BlockScoping = true
+	case *js.ClassDecl:
+		w.Classes = true
+	case *js.FuncDecl:
+		if n.Async {
+			w.Async = true
+		}
+		if n.Generator {
+			w.Generators = true
+		}
+	case *js.MethodDecl:
+		if n.Async {
+			w.Async = true
+		}
+		if n.Generator {
+			w.Generators = true
+		}
+	}
+	return w
+}
+
+func (w walker) Exit(n js.INode) {
+	
+}
 
 var Cache = os.Getenv("ES6TO5_CACHE")
 
@@ -43,6 +110,11 @@ func Main() (err error) {
 	if _, err = io.Copy(buf, os.Stdin); err != nil {
 		return
 	}
+	f, err := FindFeatures(buf.String())
+	if err == nil && !f.Unsupported() {
+		fmt.Println(buf.String())
+		return
+	}
 	h := sha256.New()
 	h.Write(buf.Bytes())
 	hs := fmt.Sprintf("%x", h.Sum(nil))
@@ -59,13 +131,10 @@ func Main() (err error) {
 			"transform-arrow-functions",
 			"transform-block-scoping",
 			"transform-classes",
-			"transform-destructuring",
 			"transform-spread",
 			"transform-parameters",
 			"transform-async-to-generator",
 			"transform-regenerator",
-			"transform-for-of",
-			"proposal-optional-chaining",
 		},
 	})
 	if err != nil {
