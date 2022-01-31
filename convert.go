@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"github.com/tdewolff/parse/v2/js"
 )
 
@@ -19,6 +18,8 @@ D.prototype=Object.create(C);
 d=new D();
 d.info();
 */
+
+const anonClassPlaceholder = "anonClass"
 
 type supr struct {
 	extends js.IExpr
@@ -40,14 +41,15 @@ func (s supr) Enter(n js.INode) js.IVisitor {
 
 func (s supr) Exit(n js.INode) {}
 
-var ErrAnonClass = errors.New("cannot process anonymous class")
-
-func classToProto(cls *js.ClassDecl, parent *js.Scope) (p js.BlockStmt, err error) {
+func classToProto(cls *js.ClassDecl, parent *js.Scope) (res js.INode, err error) {
+	p := js.BlockStmt{}
+	f := js.FuncDecl{}
 	if cls.Name == nil {
-		return p, ErrAnonClass
-	}
-	f := js.FuncDecl{
-		Name: &(*cls.Name),
+		f.Name = &js.Var{
+			Data: []byte(anonClassPlaceholder),
+		}
+	} else {
+		f.Name = &(*cls.Name)
 	}
 	f.Body.Scope.Parent = parent
 	construct, other := methods(cls)
@@ -78,6 +80,32 @@ func classToProto(cls *js.ClassDecl, parent *js.Scope) (p js.BlockStmt, err erro
 		mt.Params = m.Params
 		p.List = append(p.List, regMethod(cls.Name, name, mt))
 	}
+	if cls.Name == nil {
+		w := wrapAnon(p, parent)
+		return w, nil
+	}
+	return p, nil
+}
+
+// wrapAnon turns prototype declaration into a single expression.
+//
+// function anonClass() { ... }; anonClasss.proto...; becomes
+// (function anonClass() { ... }; ...; return anonClass;)()
+func wrapAnon(p js.BlockStmt, parent *js.Scope) (w js.GroupExpr) {
+	clos := js.CallExpr{}
+	f := js.FuncDecl{
+		Body: p,
+	}
+	f.Body.List = append(f.Body.List, p.List...)
+	ret := &js.ReturnStmt{
+		Value: &js.Var{
+			Data: []byte(anonClassPlaceholder),
+		},
+	}
+	f.Body.List = append(f.Body.List, ret)
+	f.Body.Scope.Parent = parent
+	clos.X = f
+	w.X = clos
 	return
 }
 
@@ -100,9 +128,15 @@ func extend(name *js.Var, extends js.IExpr) (s js.ExprStmt) {
 }
 
 func regMethod(clsName, name *js.Var, mt js.FuncDecl) (s js.ExprStmt) {
+	var cn string
+	if clsName == nil {
+		cn = anonClassPlaceholder
+	} else {
+		cn = clsName.String()
+	}
 	s.Value = js.BinaryExpr{
 		Op: js.EqToken,
-		X:  dotExpr(clsName.String(), "prototype", name.String()),
+		X:  dotExpr(cn, "prototype", name.String()),
 		Y:  mt,
 	}
 	return
