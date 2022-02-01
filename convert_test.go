@@ -7,6 +7,60 @@ import (
 	"testing"
 )
 
+func TestConvert(t *testing.T) {
+	src := `
+	class A {
+		constructor(w, h) {
+			this.width = w;
+			this.height = h;
+		}
+
+		info() {
+			return String(this.width) + ' ' + String(this.height);
+		}
+	}
+	let a = new A(10, 20);
+	a.info();
+	`
+	ast, err := js.Parse(parse.NewInputString(src), js.Options{})
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	Convert(ast)
+	src = ast.JS()
+	t.Logf("%v", src)
+	vm := goja.New()
+	v, err := vm.RunString(src)
+	if err != nil {
+		panic(err)
+	}
+	res := v.Export().(string)
+	if res != "10 20" {
+		t.Fatalf("%v", res)
+	}
+}
+
+func TestConvert2(t *testing.T) {
+	srcs := []string{
+		`class A {}`,
+		`new class {}`,
+	}
+	for _, src := range srcs {
+		ast, err := js.Parse(parse.NewInputString(src), js.Options{})
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		Convert(ast)
+		src = ast.JS()
+		t.Logf("%v", src)
+		vm := goja.New()
+		_, err = vm.RunString(src)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func TestClassToProto(t *testing.T) {
 	src := `
 	class A {

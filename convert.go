@@ -21,6 +21,49 @@ d.info();
 
 const anonClassPlaceholder = "anonClass"
 
+type convert struct {
+	parent js.INode
+	scope  *js.Scope
+}
+
+func Convert(ast *js.AST) {
+	js.Walk(convert{}, ast)
+}
+
+func (c convert) Enter(n js.INode) js.IVisitor {
+	switch n := n.(type) {
+	case *js.ClassDecl:
+		res, err := classToProto(n, c.scope)
+		if err != nil {
+			panic(err.Error())
+		}
+		switch p := c.parent.(type) {
+		case *js.BlockStmt:
+			found := false
+			for i, is := range p.List {
+				if is == n {
+					p.List[i] = res.(js.IStmt)
+					found = true
+				}
+			}
+			if !found {
+				panic("not found")
+			}
+		case *js.NewExpr:
+			p.X = res.(js.IExpr)
+		default:
+			panic("couldn't convert") // TODO: log msg would be enough
+		}
+	}
+	c.parent = n
+	if blk, ok := n.(*js.BlockStmt); ok {
+		c.scope = &blk.Scope
+	}
+	return c
+}
+
+func (c convert) Exit(n js.INode) {}
+
 type supr struct {
 	extends js.IExpr
 }
