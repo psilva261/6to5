@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/tdewolff/parse/v2/js"
+	"log"
 )
 
 /*
@@ -51,8 +52,10 @@ func (c convert) Enter(n js.INode) js.IVisitor {
 			}
 		case *js.NewExpr:
 			p.X = res.(js.IExpr)
+		case *js.BindingElement:
+			p.Default = res.(js.IExpr)
 		default:
-			panic("couldn't convert") // TODO: log msg would be enough
+			log.Fatalf("couldn't convert %T %v", p, p) // TODO: non-fatal log msg would be enough
 		}
 	}
 	c.parent = n

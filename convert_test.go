@@ -44,6 +44,7 @@ func TestConvert2(t *testing.T) {
 	srcs := []string{
 		`class A {}`,
 		`new class {}`,
+		`var cls = class {}`,
 	}
 	for _, src := range srcs {
 		ast, err := js.Parse(parse.NewInputString(src), js.Options{})
