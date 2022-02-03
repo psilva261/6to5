@@ -8,6 +8,12 @@ Usage example:
 ES6TO5_CACHE=/tmp/6to5_cache cat test.js | 6to5
 ```
 
+Even more experimental:
+
+```
+ES6TO5_FAST=YES cat test.js | 6to5
+```
+
 Regenerator is needed though for runtime:
 
 https://github.com/facebook/regenerator/blob/main/packages/runtime/runtime.js

@@ -18,18 +18,13 @@ import (
 
 type Features struct {
 	ArrowFunctions bool
-	BlockScoping   bool
 	Classes        bool
 	Spread         bool
 	Async          bool
 	Generators     bool
 }
 
-func FindFeatures(src string) (f Features, err error) {
-	ast, err := js.Parse(parse.NewInputString(src), js.Options{})
-	if err != nil {
-		return
-	}
+func FindFeatures(ast *js.AST, src string) (f Features, err error) {
 	w := walker{
 		Features: &f,
 	}
@@ -41,7 +36,7 @@ func FindFeatures(src string) (f Features, err error) {
 }
 
 func (f Features) Unsupported() bool {
-	return f.ArrowFunctions || f.BlockScoping || f.Classes || f.Spread || f.Async || f.Generators
+	return f.ArrowFunctions || f.Classes || f.Spread || f.Async || f.Generators
 }
 
 type walker struct {
@@ -55,8 +50,6 @@ func (w walker) Enter(n js.INode) js.IVisitor {
 		if n.Async {
 			w.Async = true
 		}
-	case *js.BlockStmt:
-		w.BlockScoping = true
 	case *js.ClassDecl:
 		w.Classes = true
 	case *js.FuncDecl:
@@ -81,7 +74,10 @@ func (w walker) Exit(n js.INode) {
 
 }
 
-var Cache = os.Getenv("ES6TO5_CACHE")
+var (
+	Cache = os.Getenv("ES6TO5_CACHE")
+	Fast = os.Getenv("ES6TO5_FAST")
+)
 
 func cached(hs string) (f *os.File, ok bool) {
 	if Cache == "" {
@@ -110,10 +106,19 @@ func Main() (err error) {
 	if _, err = io.Copy(buf, os.Stdin); err != nil {
 		return
 	}
-	f, err := FindFeatures(buf.String())
+	ast, err := js.Parse(parse.NewInputString(buf.String()), js.Options{})
+	if err != nil {
+		return fmt.Errorf("parse ast: %w", err)
+	}
+	f, err := FindFeatures(ast, buf.String())
 	if err == nil && !f.Unsupported() {
 		fmt.Println(buf.String())
 		return
+	}
+	if Fast != "" {
+		Convert(ast)
+		fmt.Println(ast.JS())
+		return nil
 	}
 	h := sha256.New()
 	h.Write(buf.Bytes())
@@ -129,7 +134,6 @@ func Main() (err error) {
 		map[string]interface{}{
 			"plugins": []string{
 				"transform-arrow-functions",
-				"transform-block-scoping",
 				"transform-classes",
 				"transform-spread",
 				"transform-parameters",

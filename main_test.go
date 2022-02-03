@@ -1,39 +1,45 @@
 package main
 
 import (
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/js"
 	"testing"
 )
 
 func TestFindFeatures(t *testing.T) {
-	f, _ := FindFeatures(`var f = (x) => x*x;`)
+	run := func(src string) Features {
+		ast, err := js.Parse(parse.NewInputString(src), js.Options{})
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		f, _ := FindFeatures(ast, src)
+		return f
+	}
+	f := run(`var f = (x) => x*x;`)
 	if !f.ArrowFunctions {
 		t.Fail()
 	}
-	f, _ = FindFeatures(`let a = 1; { let a = 2; }`)
-	if !f.BlockScoping {
-		t.Fail()
-	}
-	f, _ = FindFeatures(`class A {}`)
+	f = run(`class A {}`)
 	if !f.Classes {
 		t.Fail()
 	}
-	f, _ = FindFeatures(`console.log(...[1, 2]);`)
+	f = run(`console.log(...[1, 2]);`)
 	if !f.Spread {
 		t.Fail()
 	}
-	f, _ = FindFeatures(`async function f() {}`)
+	f = run(`async function f() {}`)
 	if !f.Async {
 		t.Fail()
 	}
-	f, _ = FindFeatures(`class A { async f() {} }`)
+	f = run(`class A { async f() {} }`)
 	if !f.Async {
 		t.Fail()
 	}
-	f, _ = FindFeatures(`function *f() {}`)
+	f = run(`function *f() {}`)
 	if !f.Generators {
 		t.Fail()
 	}
-	f, _ = FindFeatures(`class A { *f() {} }`)
+	f = run(`class A { *f() {} }`)
 	if !f.Generators {
 		t.Fail()
 	}
