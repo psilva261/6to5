@@ -64,3 +64,28 @@ func TestConvert2(t *testing.T) {
 		}
 	}
 }
+
+func TestConvertExport(t *testing.T) {
+	src := `
+var a = class {
+    constructor(e) {
+    }
+
+    foo() {}
+};
+
+export { a as A };
+	`
+	ast, err := js.Parse(parse.NewInputString(src), js.Options{})
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	Convert(ast)
+	src = ast.JS()
+	t.Logf("%v", src)
+	vm := otto.New()
+	_, err = vm.Run(src)
+	if err != nil {
+		panic(err)
+	}
+}

@@ -5,5 +5,6 @@ import (
 )
 
 func Convert(ast *js.AST) {
+	js.Walk(convertExport{}, ast)
 	js.Walk(convertCls{}, ast)
 }
