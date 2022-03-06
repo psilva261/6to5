@@ -76,7 +76,7 @@ func (w walker) Exit(n js.INode) {
 
 var (
 	Cache = os.Getenv("ES6TO5_CACHE")
-	Fast = os.Getenv("ES6TO5_FAST")
+	Fast  = os.Getenv("ES6TO5_FAST")
 )
 
 func cached(hs string) (f *os.File, ok bool) {

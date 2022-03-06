@@ -124,3 +124,35 @@ r;
 		t.Fatalf("%v", res)
 	}
 }
+
+func TestConvertArrow(t *testing.T) {
+	src := `
+/* https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions */
+var i = 1;
+var obj = { // does not create a new scope
+  i: 10,
+  b: () => this.i
+}
+
+obj.b();
+	`
+	ast, err := js.Parse(parse.NewInputString(src), js.Options{})
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	Convert(ast)
+	src = ast.JS()
+	t.Logf("%v", src)
+	vm := otto.New()
+	v, err := vm.Run(src)
+	if err != nil {
+		panic(err)
+	}
+	res, err := v.Export()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if res.(int64) != 1 {
+		t.Fatalf("%v", res)
+	}
+}

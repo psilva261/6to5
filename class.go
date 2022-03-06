@@ -1,6 +1,5 @@
 package main
 
-
 import (
 	"github.com/tdewolff/parse/v2/js"
 	"log"
@@ -155,7 +154,7 @@ func wrapAnon(p js.BlockStmt, parent *js.Scope) (w js.GroupExpr) {
 func extend(name *js.Var, extends js.IExpr) (s js.ExprStmt) {
 	s.Value = js.BinaryExpr{
 		Op: js.EqToken,
-		X: dotExpr(name.String(), "prototype"),
+		X:  dotExpr(name.String(), "prototype"),
 		Y: js.CallExpr{
 			X: dotExpr("Object", "create"),
 			Args: js.Args{

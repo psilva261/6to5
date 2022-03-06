@@ -1,14 +1,13 @@
 package main
 
-
 import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
 type convertExport struct {
-	parent  js.INode
-	scope   *js.Scope
-	block   *js.BlockStmt
+	parent js.INode
+	scope  *js.Scope
+	block  *js.BlockStmt
 }
 
 func ConvertExport(ast *js.AST) {
@@ -21,7 +20,7 @@ func (c convertExport) Enter(n js.INode) js.IVisitor {
 		found := -1
 		for i, is := range c.block.List {
 			if is == n {
-				_=is
+				_ = is
 				c.block.List[i] = &js.EmptyStmt{}
 				found = i
 				break

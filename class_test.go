@@ -119,7 +119,7 @@ func TestClassToProtoAnon(t *testing.T) {
 	t.Logf("p=%+v", p)
 	t.Logf("p'=%+v", p.JS())
 	vm := otto.New()
-	src = "a = new "+p.JS() + "(2, 5); a.info();"
+	src = "a = new " + p.JS() + "(2, 5); a.info();"
 	t.Logf("src=%v", src)
 	v, err := vm.Run(src)
 	if err != nil {

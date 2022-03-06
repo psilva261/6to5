@@ -13,9 +13,9 @@ func unique() string {
 }
 
 type convertLetConst struct {
-	parent  js.INode
-	scope   *js.Scope
-	block   *js.BlockStmt
+	parent js.INode
+	scope  *js.Scope
+	block  *js.BlockStmt
 }
 
 func ConvertLetConst(ast *js.AST) {
@@ -27,10 +27,13 @@ func (c convertLetConst) Enter(n js.INode) js.IVisitor {
 	case *js.VarDecl:
 		for _, be := range v.List {
 			vr := be.Binding.(*js.Var)
+			if v.TokenType == js.VarToken && vr.Decl == js.VariableDecl {
+				continue
+			}
 			v.TokenType = js.VarToken
 			vr.Decl = js.VariableDecl
 			if c.scope.Parent == nil {
-				continue
+				break
 			}
 			vr.Data = []byte(string(vr.Data) + "$" + unique())
 		}
