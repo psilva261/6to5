@@ -67,7 +67,7 @@ func TestConvert2(t *testing.T) {
 
 func TestConvertExport(t *testing.T) {
 	src := `
-var a = class {
+let a = class {
     constructor(e) {
     }
 
@@ -87,5 +87,40 @@ export { a as A };
 	_, err = vm.Run(src)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func TestConvertLetConst(t *testing.T) {
+	src := `
+const a = 10;
+let r = 0;
+for (let i = a; i <= a; i++) {
+	r += i;
+}
+(function() {
+	let a = 1000;
+	r += a;
+})()
+r += 10*a;
+r;
+	`
+	ast, err := js.Parse(parse.NewInputString(src), js.Options{})
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	Convert(ast)
+	src = ast.JS()
+	t.Logf("%v", src)
+	vm := otto.New()
+	v, err := vm.Run(src)
+	if err != nil {
+		panic(err)
+	}
+	res, err := v.Export()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	if res.(float64) != 1110 {
+		t.Fatalf("%v", res)
 	}
 }
