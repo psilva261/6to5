@@ -7,20 +7,17 @@ import (
 	"testing"
 )
 
-func TestRegexp(t *testing.T) {
+func TestObjects(t *testing.T) {
 	src := `
-	/* https://babeljs.io/docs/en/babel-plugin-transform-sticky-regex */
-	/* https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/sticky */
-	var str = 'table football';
-	var regex = /foo/y;
-	var regex2 = /\\(?:["\\\/bfnrt]|u[\da-fA-F]{4})/g;
-	regex.test(str);
+	var a=2, b=5;
+	var obj = {a:a, b: b};
+	obj.a+obj.b;
 	`
 	ast, err := js.Parse(parse.NewInputString(src), js.Options{})
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	js.Walk(convertRegexp{}, ast)
+	js.Walk(convertObjects{}, ast)
 	src = ast.JS()
 	t.Logf("%v", src)
 	vm := otto.New()
@@ -32,7 +29,7 @@ func TestRegexp(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
-	if res.(bool) != true {
+	if res.(float64) != 7 {
 		t.Fatalf("%v", res)
 	}
 }

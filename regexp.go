@@ -27,6 +27,8 @@ func (c convertRegexp) Enter(n js.INode) js.IVisitor {
 				vv.Value = re.(js.IExpr)
 			case *js.BindingElement:
 				vv.Default = re.(js.IExpr)
+			case *js.DotExpr:
+				vv.X = re.(js.IExpr)
 			case *js.GroupExpr:
 				vv.X = re.(js.IExpr)
 			case *js.Property:
@@ -51,6 +53,8 @@ func toRegexp(l *js.LiteralExpr) (res js.INode) {
 	data = strings.TrimPrefix(data, "/")
 	i := strings.LastIndex(data, "/")
 	p := data[:i]
+	p = strings.ReplaceAll(p, `\`, `\\`)
+	p = strings.ReplaceAll(p, `"`, `\"`)
 	fl := data[i+1:]
 	args := []js.Arg{
 		js.Arg{
